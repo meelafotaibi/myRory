@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>♥ For You ♥</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <!-- Heart Drawing Canvas -->
+  <canvas id="heartCanvas"></canvas>
+
+  <!-- Hint Text -->
+  <div id="hintText" class="hint-text">حركي إصبعك 🌸</div>
+
+  <!-- Roses Container -->
+  <div id="rosesContainer"></div>
+
+  <!-- Envelope -->
+  <div id="envelope" class="envelope hidden">
+    <div class="envelope-back"></div>
+    <div class="envelope-front"></div>
+    <div class="envelope-flap"></div>
+    <div id="seal" class="seal">
+      <div class="seal-glow"></div>
+      <span class="seal-text">❤</span>
+    </div>
+    <div class="try-open-label">Try to open</div>
+  </div>
+
+  <!-- Letter Paper -->
+  <div id="letterPaper" class="letter-paper hidden">
+    <div class="letter-header">
+      <h1>رسالة خاصة</h1>
+      <p class="letter-subtitle">From the heart ♥</p>
+    </div>
+    <div class="letter-content">
+      <div id="letterBody"></div>
+    </div>
+    <button id="closeLetter" class="close-letter">✕</button>
+  </div>
+
+  <!-- Confetti Container -->
+  <div id="confettiContainer"></div>
+
+  <script>
+    // ============================================================
+    // CONFIGURATION & STATE
+    // ============================================================
+    const state = {
+      heartComplete: false,
+      rosesActive: false,
+      envelopeVisible: false,
+      letterOpen: false,
+      currentPuzzle: 0,
+      halfMessageShown: false,
+      fullMessageShown: false
+    };
+
+    const roses = [];
+    const MAX_ROSES = 80; // Reduced from 500 to prevent lag
+    let roseInterval;
+    let lastScatterTime = 0;
+
+    // ============================================================
+    // HEART DRAWING ANIMATION
+    // ============================================================
+    const canvas = document.getElementById('heartCanvas');
+    const ctx = canvas.getContext('2d');
+    const heartGlow = document.createElement('div');
+    heartGlow.className = 'heart-bg-glow';
+    document.body.appendChild(heartGlow);
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    function drawHeart() {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const scale = Math.min(canvas.width, canvas.height) / 40;
+      const duration = 10000; // 10 seconds
+      const startTime = Date.now();
+
+      ctx.strokeStyle = 'rgba(255, 182, 193, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = 'rgba(255, 182, 193, 0.6)';
+
+      function animate() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw heart using parametric equation with rays
+        const numRays = 72;
+        const raysToShow = Math.floor(numRays * progress);
+
+        for (let i = 0; i < raysToShow; i++) {
+          const t = (i / numRays) * Math.PI * 2;
+
+          const x = 16 * Math.pow(Math.sin(t), 3);
+          const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+
+          const px = centerX + x * scale;
+          const py = centerY + y * scale;
+
+          ctx.beginPath();
+          ctx.moveTo(centerX, centerY);
+          ctx.lineTo(px, py);
+          ctx.stroke();
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          fadeOutHeart();
+        }
+      }
+
+      animate();
+    }
+
+    function fadeOutHeart() {
+      const fadeDuration = 1400;
+      const startTime = Date.now();
+
+      function fade() {
+        const elapsed = Date.now() - startTime;
+        const progress = elapsed / fadeDuration;
+        const opacity = 1 - progress;
+
+        canvas.style.opacity = opacity;
+        heartGlow.style.opacity = opacity; // Fade glow with heart
+
+        if (progress < 1) {
+          requestAnimationFrame(fade);
+        } else {
+          canvas.style.display = 'none';
+          heartGlow.style.display = 'none';
+          state.heartComplete = true;
+          startRoseFall();
+        }
+      }
+
+      fade();
+    }
+
+    // ============================================================
+    // ROSE CREATION & ANIMATION
+    // ============================================================
+    const rosesContainer = document.getElementById('rosesContainer');
+
+    function createRose(x = null, y = null) {
+      if (roses.length >= MAX_ROSES) {
+        // If we're at capacity, don't create new ones unless explicitly interacting
+        // Or remove oldest immediately
+        const oldest = roses.shift();
+        oldest.element.remove();
+      }
+
+      const rose = document.createElement('div');
+      rose.className = 'rose';
+
+      const size = 15 + Math.random() * 25; // 15-40px
+      rose.style.width = size + 'px';
+      rose.style.height = size + 'px';
+
+
+      // Build CSS rose
+      rose.innerHTML = `
+                <div class="rose-petals">
+                    <div class="petal petal-1"></div>
+                    <div class="petal petal-2"></div>
+                    <div class="petal petal-3"></div>
+                    <div class="petal petal-4"></div>
+                    <div class="petal petal-5"></div>
+                </div>
+                <div class="rose-center"></div>
+            `;
+
+      // Initial position
+      const posX = x !== null ? x : Math.random() * window.innerWidth;
+      const posY = y !== null ? y : -50;
+
+      // Physics properties
+      const roseData = {
+        element: rose,
+        x: posX,
+        y: posY,
+        vx: (Math.random() - 0.5) * 2,
+        vy: Math.random() * 2 + 1,
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 5,
+        landed: false,
+        size: size
+      };
+
+      rosesContainer.appendChild(rose);
+      roses.push(roseData);
+
+      // Limit roses
+      if (roses.length > MAX_ROSES) {
+        const oldest = roses.shift();
+        oldest.element.remove();
+      }
+
+      return roseData;
+    }
+
+    function updateRoses() {
+      const groundLevel = window.innerHeight - 50;
+
+      roses.forEach(roseData => {
+        if (!roseData.landed) {
+          // Falling physics
+          roseData.vy += 0.2; // gravity
+          roseData.x += roseData.vx;
+          roseData.y += roseData.vy;
+          roseData.rotation += roseData.rotationSpeed;
+
+          // Check if landed
+          if (roseData.y >= groundLevel) {
+            roseData.y = groundLevel;
+            roseData.landed = true;
+            roseData.vy = 0;
+            roseData.vx = 0;
+            roseData.rotationSpeed *= 0.5;
+          }
+        } else {
+          // Landed - settle to ground
+          if (roseData.vy !== 0) {
+            roseData.vy *= 0.9;
+            roseData.y += roseData.vy;
+            if (Math.abs(roseData.vy) < 0.1) {
+              roseData.vy = 0;
+              roseData.y = groundLevel;
+            }
+          }
+        }
+
+        // Update DOM
+        roseData.element.style.transform = `translate(${roseData.x}px, ${roseData.y}px) rotate(${roseData.rotation}deg)`;
+      });
+
+      if (state.rosesActive) {
+        requestAnimationFrame(updateRoses);
+      }
+    }
+
+    function startRoseFall() {
+      state.rosesActive = true;
+      document.getElementById('hintText').classList.add('visible');
+
+      // Drop roses continuously
+      roseInterval = setInterval(() => {
+        for (let i = 0; i < 3; i++) {
+          createRose();
+        }
+      }, 200);
+
+      updateRoses();
+
+      // Show envelope after 3 seconds
+      setTimeout(() => {
+        showEnvelope();
+      }, 3000);
+    }
+
+    // ============================================================
+    // ROSE INTERACTION (SCATTER)
+    // ============================================================
+    function scatterRosesAt(x, y) {
+      const now = Date.now();
+      if (now - lastScatterTime < 50) return; // Throttle
+      lastScatterTime = now;
+
+      roses.forEach(roseData => {
+        if (roseData.landed) {
+          const dx = roseData.x - x;
+          const dy = roseData.y - y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 100) {
+            const force = (100 - distance) / 10;
+            roseData.vx = (dx / distance) * force;
+            roseData.vy = -force * 2;
+            roseData.landed = false;
+            roseData.rotationSpeed = (Math.random() - 0.5) * 10;
+          }
+        }
+      });
+    }
+
+    document.addEventListener('pointermove', (e) => {
+      if (state.rosesActive) {
+        scatterRosesAt(e.clientX, e.clientY);
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (state.rosesActive && !state.letterOpen) {
+        // Add extra roses at click location
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            createRose(e.clientX + (Math.random() - 0.5) * 30, e.clientY - 20);
+          }, i * 50);
+        }
+      }
+    });
+
+    // ============================================================
+    // ENVELOPE
+    // ============================================================
+    const envelope = document.getElementById('envelope');
+    const seal = document.getElementById('seal');
+    const letterPaper = document.getElementById('letterPaper');
+
+    function showEnvelope() {
+      envelope.classList.remove('hidden');
+      envelope.classList.add('visible');
+      state.envelopeVisible = true;
+    }
+
+    seal.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!state.letterOpen) {
+        openEnvelope();
+      }
+    });
+
+    function openEnvelope() {
+      state.letterOpen = true;
+      envelope.classList.add('opened');
+
+      setTimeout(() => {
+        letterPaper.classList.remove('hidden');
+        letterPaper.classList.add('visible');
+        showPuzzle1();
+      }, 800);
+    }
+
+    document.getElementById('closeLetter').addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeLetter();
+    });
+
+    function closeLetter() {
+      letterPaper.classList.remove('visible');
+      setTimeout(() => {
+        letterPaper.classList.add('hidden');
+        envelope.classList.remove('opened');
+        state.letterOpen = false;
+      }, 300);
+    }
+
+    // ============================================================
+    // CONFETTI SYSTEM
+    // ============================================================
+    function triggerConfetti() {
+      const confettiContainer = document.getElementById('confettiContainer');
+      const colors = ['#FFB6C1', '#FFC0CB', '#FFE4E1', '#FFFFFF'];
+
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = (Math.random() * 100) + '%';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = (Math.random() * 0.3) + 's';
+        confetti.style.animationDuration = (Math.random() * 1 + 2) + 's';
+
+        confettiContainer.appendChild(confetti);
+
+        setTimeout(() => confetti.remove(), 3000);
+      }
+    }
+
+    // ============================================================
+    // PUZZLE FLOW
+    // ============================================================
+    const secretMessage = `وصلنا عند أهم حاجة، <strong>رنيمي</strong> أنا جدًا فخورة بِك وبكل إنجاز سويتيه من أول ماعرفتك الى الآن، من أبسط الى أقوى انجازاتك.<br><br>أقدر جدًا الشخص الجميل والقوي اللي فيك، انسانه عشت معاها أجمل وافضل ايامي، كنتِ حنونه علي جدًا مثل طيف شمس دافي بفصل الشتاء، كنت ولا زلت أحبك من كل قلبي وبضل أحمل لك مشاعر جميلة ونظيفة`;
+
+    const halfMessage = `وصلنا عند أهم حاجة، <strong>رنيمي</strong> أنا جدًا فخورة بِك وبكل إنجاز سويتيه من أول ماعرفتك الى الآن، من أبسط الى أقوى انجازاتك.`;
+
+    function showPuzzle1() {
+      const letterBody = document.getElementById('letterBody');
+      letterBody.innerHTML = `
+                <div class="puzzle-section">
+                    <h2 class="puzzle-title">🔮 اللغز الأول</h2>
+                    <p class="puzzle-riddle">
+                        شيء خفيف كالهواء، لكنه يثقل القلب عندما يغيب...<br>
+                        ما هو؟
+                    </p>
+                    <div class="puzzle-input-group">
+                        <input type="text" id="puzzle1Input" class="puzzle-input" placeholder="اكتبي الإجابة هنا...">
+                        <button id="checkPuzzle1" class="btn-check">تحقق ✓</button>
+                    </div>
+                    <button id="hintPuzzle1" class="btn-hint">تلميحة 💡</button>
+                    <div id="puzzle1Feedback" class="puzzle-feedback"></div>
+                </div>
+            `;
+
+      document.getElementById('checkPuzzle1').addEventListener('click', checkPuzzle1);
+      document.getElementById('hintPuzzle1').addEventListener('click', () => {
+        showHint('شيء يجعلنا نشعر بالدفء... يبدأ بحرف "ال"...');
+      });
+    }
+
+    function checkPuzzle1() {
+      const input = document.getElementById('puzzle1Input').value.trim().toLowerCase();
+      const feedback = document.getElementById('puzzle1Feedback');
+
+      const correctAnswers = ['الحب', 'حب', 'الحنان', 'حنان'];
+
+      if (correctAnswers.some(ans => input.includes(ans))) {
+        feedback.innerHTML = '<span class="success">✨ صحيح! أحسنتِ!</span>';
+        triggerConfetti();
+
+        setTimeout(() => {
+          showHalfMessage();
+        }, 1500);
+      } else {
+        feedback.innerHTML = '<span class="error">حاولي مرة أخرى... فكري من القلب 💗</span>';
+      }
+    }
+
+    function showHalfMessage() {
+      state.halfMessageShown = true;
+      const letterBody = document.getElementById('letterBody');
+
+      letterBody.innerHTML = `
+                <div class="message-reveal">
+                    <p class="revealed-message">${halfMessage}</p>
+                    <div class="choice-buttons">
+                        <button id="anotherPuzzle" class="btn-choice">تريدين لغز آخر؟</button>
+                        <button id="showFull" class="btn-choice btn-hurry">أو متعجلة على الرسالة السرية؟ 🫣</button>
+                    </div>
+                </div>
+            `;
+
+      document.getElementById('anotherPuzzle').addEventListener('click', showPuzzle2);
+      document.getElementById('showFull').addEventListener('click', showFullMessage);
+    }
+
+    function showPuzzle2() {
+      const letterBody = document.getElementById('letterBody');
+      letterBody.innerHTML = `
+                <div class="puzzle-section">
+                    <h2 class="puzzle-title">🎭 اللغز الثاني</h2>
+                    <p class="puzzle-riddle">
+                        إذا كنتِ تملكينها، تريدين أن تشاركيها...<br>
+                        ولكن إذا شاركتِها، لن تملكيها بعد الآن...<br>
+                        ما هي؟
+                    </p>
+                    <div class="puzzle-input-group">
+                        <input type="text" id="puzzle2Input" class="puzzle-input" placeholder="ما هي الإجابة؟">
+                        <button id="checkPuzzle2" class="btn-check">تحقق ✓</button>
+                    </div>
+                    <button id="hintPuzzle2" class="btn-hint">تلميحة 💡</button>
+                    <div id="puzzle2Feedback" class="puzzle-feedback"></div>
+                </div>
+            `;
+
+      document.getElementById('checkPuzzle2').addEventListener('click', checkPuzzle2);
+      document.getElementById('hintPuzzle2').addEventListener('click', () => {
+        showHint('شيء لا يمكن لمسه... لكن يمكن أن يكون كنزًا... يبدأ بحرف "س"...');
+      });
+    }
+
+    function checkPuzzle2() {
+      const input = document.getElementById('puzzle2Input').value.trim().toLowerCase();
+      const feedback = document.getElementById('puzzle2Feedback');
+
+      const correctAnswers = ['سر', 'السر', 'secret'];
+
+      if (correctAnswers.some(ans => input.includes(ans))) {
+        feedback.innerHTML = '<span class="success">🎉 رائع! إجابة صحيحة!</span>';
+        triggerConfetti();
+
+        setTimeout(() => {
+          showEnvelopeGame();
+        }, 1500);
+      } else {
+        feedback.innerHTML = '<span class="error">ليست صحيحة... فكري في شيء خاص جداً 🤫</span>';
+      }
+    }
+
+    function showHint(hintText) {
+      const feedback = document.querySelectorAll('.puzzle-feedback');
+      feedback.forEach(f => {
+        f.innerHTML = `<span class="hint-message">💡 ${hintText}</span>`;
+      });
+    }
+
+    // ============================================================
+    // ENVELOPE SHUFFLE GAME
+    // ============================================================
+    function showEnvelopeGame() {
+      const letterBody = document.getElementById('letterBody');
+      letterBody.innerHTML = `
+                <div class="envelope-game">
+                    <h2 class="game-title">🎴 اللعبة النهائية</h2>
+                    <p class="game-instruction">اختاري رسالة واحدة من الثلاثة...</p>
+                    <div id="gameEnvelopes" class="game-envelopes" style="position: relative; height: 120px;">
+                        <div class="game-envelope" id="env1" data-message="feelings" style="left: 0;">
+                            <div class="mini-envelope">
+                                <div class="mini-flap"></div>
+                                <div class="mini-seal">♥</div>
+                            </div>
+                        </div>
+                        <div class="game-envelope" id="env2" data-message="proud" style="left: 33.33%;">
+                            <div class="mini-envelope">
+                                <div class="mini-flap"></div>
+                                <div class="mini-seal">★</div>
+                            </div>
+                        </div>
+                        <div class="game-envelope" id="env3" data-message="surprise" style="left: 66.66%;">
+                            <div class="mini-envelope">
+                                <div class="mini-flap"></div>
+                                <div class="mini-seal">✦</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="gameResult" class="game-result"></div>
+                </div>
+            `;
+
+      // Wait for render then shuffle
+      setTimeout(() => {
+        shuffleEnvelopes();
+      }, 1000);
+    }
+
+    function shuffleEnvelopes() {
+      const envs = [
+        document.getElementById('env1'),
+        document.getElementById('env2'),
+        document.getElementById('env3')
+      ];
+
+      // Initial positions (in percentage)
+      let positions = [0, 33.33, 66.66]; // 0%, ~33%, ~66% (centered around their slots)
+
+      // We'll actually specific specific left percentages to swap
+      // But to do shell game, we need to animate 'left' or 'transform'
+      // Let's use left for simplicity in this constrained container
+
+      let shuffleCount = 0;
+      const maxShuffles = 5;
+      const shuffleSpeed = 600;
+
+      function swap() {
+        // Pick two random indices
+        const idx1 = Math.floor(Math.random() * 3);
+        let idx2 = Math.floor(Math.random() * 3);
+        while (idx1 === idx2) idx2 = Math.floor(Math.random() * 3);
+
+        // Swap positions in the array logic
+        const tempPos = positions[idx1];
+        positions[idx1] = positions[idx2];
+        positions[idx2] = tempPos;
+
+        // Animate visually
+        envs[0].style.left = positions[0] + '%';
+        envs[1].style.left = positions[1] + '%';
+        envs[2].style.left = positions[2] + '%';
+
+        shuffleCount++;
+        if (shuffleCount < maxShuffles) {
+          setTimeout(swap, shuffleSpeed);
+        } else {
+          // Enable locking
+          envs.forEach(env => {
+            env.style.cursor = 'pointer';
+            env.onclick = () => selectEnvelope(env.dataset.message);
+          });
+        }
+      }
+
+      // Disable clicks during shuffle
+      envs.forEach(env => {
+        env.style.cursor = 'default';
+        env.onclick = null;
+      });
+
+      swap();
+    }
+
+    function selectEnvelope(type) {
+      // These messages are now the FINAL destination for this path
+      const messages = {
+        feelings: `
+                    <div class="final-message">
+                        <h2 class="final-title">💖 مشاعري تجاهك</h2>
+                        <div class="final-text">
+                           ${secretMessage}
+                        </div>
+                        <div class="final-signature">
+                            <p>بكل حب وصدق ♥</p>
+                        </div>
+                    </div>`,
+        proud: `
+                    <div class="final-message">
+                        <h2 class="final-title">⭐ فخورة بإنجازاتك</h2>
+                        <div class="final-text">
+                            من أول يوم عرفتك، وأنا أشهد نموك وتطورك. كل خطوة أخذتِها، كل تحدٍ واجهتِه بشجاعة، كل إنجاز حققتِه... كلها تجعلني فخورة جداً بك. <br><br>
+                            أنتِ قوية، ذكية، وجميلة من الداخل والخارج. استمري في التألق، ولا تتوقفي أبداً عن السعي وراء أحلامك. العالم يحتاج إلى بريقك.
+                        </div>
+                        <div class="final-signature">
+                            <p>دائماً بجانبك ♥</p>
+                        </div>
+                    </div>`,
+        surprise: `
+                    <div class="final-message">
+                        <h2 class="final-title">✨ مفاجأة خاصة</h2>
+                        <div class="final-text">
+                            أنتِ مثل نجمة في سماء مظلمة، تضيئين كل شيء حولك. لديك روح نادرة، قلب طيب، وابتسامة تُدفئ القلوب. أتمنى أن تعرفي كم أنتِ مميزة، وكم تستحقين كل الحب والسعادة في هذا الكون.<br><br>
+                            شكراً لأنك أنتِ. وجودك في حياتي هو أجمل هدية.
+                        </div>
+                        <div class="final-signature">
+                            <p>لكِ وحدك ♥</p>
+                        </div>
+                    </div>`
+      };
+
+      const result = document.getElementById('gameResult');
+      // Show the CHOSEN message directly
+      result.innerHTML = messages[type];
+
+      // Hide envelopes to focus on message
+      document.getElementById('gameEnvelopes').style.display = 'none';
+
+      triggerConfetti();
+    }
+
+    function showFullMessage() {
+      state.fullMessageShown = true;
+      const letterBody = document.getElementById('letterBody');
+
+      letterBody.innerHTML = `
+                <div class="final-message">
+                    <h2 class="final-title">💌 الرسالة السرية</h2>
+                    <div class="final-text">
+                        ${secretMessage}
+                    </div>
+                    <div class="final-signature">
+                        <p>بكل حب وصدق ♥</p>
+                    </div>
+                </div>
+            `;
+
+      triggerConfetti();
+    }
+
+    // ============================================================
+    // INITIALIZATION
+    // ============================================================
+    window.addEventListener('load', () => {
+      drawHeart();
+    });
+  </script>
+</body>
+
+</html>

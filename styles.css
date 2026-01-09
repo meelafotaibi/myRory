@@ -1,0 +1,868 @@
+/* ============================================================
+   GLOBAL RESET & BASE STYLES
+   ============================================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: radial-gradient(ellipse at center, #1a1a1a 0%, #000000 100%);
+    color: #FFB6C1;
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+    cursor: default;
+}
+
+/* ============================================================
+   HEART CANVAS
+   ============================================================ */
+#heartCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+    transition: opacity 1.4s ease-out;
+}
+
+.heart-bg-glow {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255, 105, 180, 0.2) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(20px);
+    z-index: 5;
+    animation: glowPulse 2s infinite alternate;
+    pointer-events: none;
+    transition: opacity 1.4s ease-out;
+}
+
+@keyframes glowPulse {
+    from {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0.5;
+    }
+
+    to {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+/* ============================================================
+   HINT TEXT
+   ============================================================ */
+.hint-text {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2rem;
+    color: #FFB6C1;
+    text-shadow: 0 0 10px rgba(255, 182, 193, 0.6);
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.8s ease-in;
+    pointer-events: none;
+}
+
+.hint-text.visible {
+    opacity: 1;
+}
+
+/* ============================================================
+   ROSES CONTAINER & ROSE STYLES
+   ============================================================ */
+#rosesContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.rose {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.rose-petals {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.petal {
+    position: absolute;
+    width: 60%;
+    height: 60%;
+    background: linear-gradient(135deg, #FFB6C1 0%, #FFC0CB 50%, #FFE4E1 100%);
+    border-radius: 50% 50% 50% 0;
+    top: 50%;
+    left: 50%;
+    transform-origin: 0 0;
+    box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.petal-1 {
+    transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.petal-2 {
+    transform: translate(-50%, -50%) rotate(72deg);
+}
+
+.petal-3 {
+    transform: translate(-50%, -50%) rotate(144deg);
+}
+
+.petal-4 {
+    transform: translate(-50%, -50%) rotate(216deg);
+}
+
+.petal-5 {
+    transform: translate(-50%, -50%) rotate(288deg);
+}
+
+.rose-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30%;
+    height: 30%;
+    background: radial-gradient(circle, #FFC0CB 0%, #FF69B4 100%);
+    border-radius: 50%;
+    box-shadow: 0 0 3px rgba(255, 105, 180, 0.5);
+}
+
+/* ============================================================
+   ENVELOPE STYLES
+   ============================================================ */
+.envelope {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: min(400px, 80vw);
+    height: min(280px, 56vw);
+    z-index: 50;
+    pointer-events: none;
+    transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.envelope.visible {
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: all;
+}
+
+.envelope.hidden {
+    display: none;
+}
+
+.envelope-back,
+.envelope-front {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 182, 193, 0.15);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 182, 193, 0.3);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(255, 182, 193, 0.2);
+}
+
+.envelope-flap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: linear-gradient(to bottom, rgba(255, 192, 203, 0.2), rgba(255, 182, 193, 0.15));
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 182, 193, 0.3);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    transform-origin: top center;
+    transition: transform 0.8s ease-in-out;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.envelope.opened .envelope-flap {
+    transform: rotateX(180deg);
+}
+
+.seal {
+    position: absolute;
+    top: 22%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background: radial-gradient(circle, #FF69B4, #FFB6C1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 0 20px rgba(255, 105, 180, 0.6);
+}
+
+.seal:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 0 30px rgba(255, 105, 180, 0.9);
+}
+
+.seal-glow {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 105, 180, 0.4), transparent);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.3);
+        opacity: 0.5;
+    }
+}
+
+.seal-text {
+    font-size: 2rem;
+    z-index: 1;
+    color: white;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.try-open-label {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 182, 193, 0.2);
+    backdrop-filter: blur(5px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: #FFE4E1;
+    border: 1px solid rgba(255, 182, 193, 0.3);
+    white-space: nowrap;
+}
+
+/* ============================================================
+   LETTER PAPER
+   ============================================================ */
+.letter-paper {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: min(600px, 90vw);
+    max-height: 80vh;
+    background: linear-gradient(to bottom, #FFF5F7, #FFE4E1);
+    border-radius: 12px;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 182, 193, 0.3);
+    z-index: 100;
+    opacity: 0;
+    transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.5s ease;
+    overflow: hidden;
+}
+
+.letter-paper.visible {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.letter-paper.hidden {
+    display: none;
+}
+
+.letter-header {
+    background: linear-gradient(135deg, #FFB6C1, #FFC0CB);
+    padding: 20px;
+    text-align: center;
+    border-bottom: 2px solid rgba(255, 105, 180, 0.3);
+}
+
+.letter-header h1 {
+    font-size: 2rem;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    margin-bottom: 5px;
+}
+
+.letter-subtitle {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-style: italic;
+}
+
+.letter-content {
+    padding: 30px;
+    max-height: calc(80vh - 150px);
+    overflow-y: auto;
+    color: #333;
+    line-height: 1.8;
+    direction: rtl;
+    text-align: right;
+}
+
+.letter-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.letter-content::-webkit-scrollbar-track {
+    background: rgba(255, 182, 193, 0.1);
+    border-radius: 4px;
+}
+
+.letter-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 182, 193, 0.5);
+    border-radius: 4px;
+}
+
+.letter-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 182, 193, 0.7);
+}
+
+.close-letter {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    color: #FF69B4;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.close-letter:hover {
+    background: rgba(255, 105, 180, 0.9);
+    color: white;
+    transform: rotate(90deg);
+}
+
+/* ============================================================
+   PUZZLE STYLES
+   ============================================================ */
+.puzzle-section {
+    animation: fadeInUp 0.5s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.puzzle-title {
+    font-size: 1.8rem;
+    color: #FF69B4;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.puzzle-riddle {
+    font-size: 1.1rem;
+    color: #555;
+    line-height: 1.8;
+    margin-bottom: 25px;
+    text-align: center;
+    font-style: italic;
+}
+
+.puzzle-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.puzzle-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid rgba(255, 182, 193, 0.5);
+    border-radius: 8px;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    outline: none;
+    transition: border-color 0.3s ease;
+    direction: rtl;
+    text-align: right;
+}
+
+.puzzle-input:focus {
+    border-color: #FF69B4;
+    box-shadow: 0 0 8px rgba(255, 105, 180, 0.3);
+}
+
+.btn-check {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #FF69B4, #FFB6C1);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 105, 180, 0.3);
+}
+
+.btn-check:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 105, 180, 0.5);
+}
+
+.btn-hint {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background: rgba(255, 182, 193, 0.2);
+    color: #FF69B4;
+    border: 2px dashed rgba(255, 182, 193, 0.5);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-hint:hover {
+    background: rgba(255, 182, 193, 0.3);
+    border-color: #FF69B4;
+}
+
+.puzzle-feedback {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 1rem;
+    min-height: 25px;
+}
+
+.success {
+    color: #2ecc71;
+    font-weight: 600;
+    animation: bounceIn 0.5s ease;
+}
+
+.error {
+    color: #e74c3c;
+    font-weight: 600;
+    animation: shakeX 0.5s ease;
+}
+
+.hint-message {
+    color: #FF69B4;
+    font-style: italic;
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes shakeX {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-10px);
+    }
+
+    75% {
+        transform: translateX(10px);
+    }
+}
+
+/* ============================================================
+   MESSAGE REVEAL & CHOICES
+   ============================================================ */
+.message-reveal {
+    animation: fadeInUp 0.6s ease;
+}
+
+.revealed-message {
+    font-size: 1.15rem;
+    color: #444;
+    line-height: 2;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255, 182, 193, 0.1);
+    border-radius: 8px;
+    border-left: 4px solid #FF69B4;
+}
+
+.choice-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.btn-choice {
+    padding: 15px 25px;
+    background: linear-gradient(135deg, #FFB6C1, #FFC0CB);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 182, 193, 0.4);
+}
+
+.btn-choice:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(255, 182, 193, 0.6);
+}
+
+.btn-hurry {
+    background: linear-gradient(135deg, #FF69B4, #FF1493);
+}
+
+/* ============================================================
+   ENVELOPE SHUFFLE GAME
+   ============================================================ */
+.envelope-game {
+    animation: fadeInUp 0.5s ease;
+}
+
+.game-title {
+    font-size: 1.8rem;
+    color: #FF69B4;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.game-instruction {
+    font-size: 1.05rem;
+    color: #666;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.game-envelopes {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 30px;
+    height: 100px;
+    /* To reserve space for absolute items */
+}
+
+.game-envelope {
+    position: absolute;
+    top: 0;
+    width: 33%;
+    /* fit 3 in row */
+    display: flex;
+    justify-content: center;
+    transition: left 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.game-envelope:hover {
+    transform: translateY(-10px);
+}
+
+/* Removed shuffling keyframe, using JS transition */
+
+.mini-envelope {
+    width: 90px;
+    height: 70px;
+    background: rgba(255, 182, 193, 0.2);
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(255, 182, 193, 0.4);
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 4px 16px rgba(255, 182, 193, 0.3);
+    transition: all 0.3s ease;
+}
+
+.mini-envelope:hover {
+    box-shadow: 0 6px 24px rgba(255, 182, 193, 0.5);
+    border-color: #FF69B4;
+}
+
+.mini-flap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: linear-gradient(to bottom, rgba(255, 192, 203, 0.3), rgba(255, 182, 193, 0.2));
+    border: 2px solid rgba(255, 182, 193, 0.4);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.mini-seal {
+    position: absolute;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30px;
+    height: 30px;
+    background: radial-gradient(circle, #FF69B4, #FFB6C1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: white;
+    box-shadow: 0 0 10px rgba(255, 105, 180, 0.5);
+}
+
+.game-result {
+    min-height: 100px;
+    animation: fadeInUp 0.5s ease;
+}
+
+.selected-message {
+    background: linear-gradient(to bottom, rgba(255, 182, 193, 0.1), rgba(255, 228, 225, 0.2));
+    padding: 25px;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 182, 193, 0.3);
+    box-shadow: 0 4px 16px rgba(255, 182, 193, 0.2);
+}
+
+.selected-message h3 {
+    color: #FF69B4;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.selected-message p {
+    color: #555;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    text-align: center;
+}
+
+.btn-full-message {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #FF69B4, #FFC0CB);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 105, 180, 0.3);
+}
+
+.btn-full-message:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 105, 180, 0.5);
+}
+
+/* ============================================================
+   FINAL MESSAGE
+   ============================================================ */
+.final-message {
+    animation: fadeInUp 0.6s ease;
+}
+
+.final-title {
+    font-size: 2rem;
+    color: #FF69B4;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.final-text {
+    font-size: 1.2rem;
+    color: #444;
+    line-height: 2.2;
+    padding: 25px;
+    background: linear-gradient(to bottom, rgba(255, 182, 193, 0.05), rgba(255, 228, 225, 0.1));
+    border-radius: 12px;
+    border: 2px solid rgba(255, 182, 193, 0.2);
+    margin-bottom: 25px;
+    direction: rtl;
+    text-align: right;
+}
+
+.final-text strong {
+    color: #FF1493;
+    font-weight: 700;
+}
+
+.final-signature {
+    text-align: center;
+    font-size: 1.15rem;
+    color: #FF69B4;
+    font-style: italic;
+    margin-top: 20px;
+}
+
+/* ============================================================
+   CONFETTI
+   ============================================================ */
+#confettiContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 200;
+}
+
+.confetti {
+    position: absolute;
+    width: 8px;
+    height: 15px;
+    border-radius: 2px;
+    animation: confettiFall 3s ease-out forwards;
+}
+
+@keyframes confettiFall {
+    0% {
+        top: -10%;
+        opacity: 1;
+        transform: translateX(0) rotate(0deg);
+    }
+
+    100% {
+        top: 110%;
+        opacity: 0;
+        transform: translateX(calc(100vw * (var(--random, 0.5) - 0.5))) rotate(720deg);
+    }
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+@media (max-width: 768px) {
+    .hint-text {
+        font-size: 1rem;
+        top: 10px;
+    }
+
+    .letter-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .letter-content {
+        padding: 20px;
+        font-size: 0.95rem;
+    }
+
+    .puzzle-title {
+        font-size: 1.4rem;
+    }
+
+    .puzzle-riddle {
+        font-size: 1rem;
+    }
+
+    .puzzle-input-group {
+        flex-direction: column;
+    }
+
+    .game-envelopes {
+        gap: 15px;
+    }
+
+    .mini-envelope {
+        width: 100px;
+        height: 75px;
+    }
+
+    .final-text {
+        font-size: 1.05rem;
+        padding: 20px;
+    }
+
+    .choice-buttons {
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .envelope {
+        width: 90vw;
+        height: 63vw;
+    }
+
+    .seal {
+        width: 50px;
+        height: 50px;
+    }
+
+    .seal-text {
+        font-size: 1.5rem;
+    }
+
+    .letter-paper {
+        width: 95vw;
+    }
+
+    .mini-envelope {
+        width: 85px;
+        height: 65px;
+    }
+
+    .game-title {
+        font-size: 1.4rem;
+    }
+}
